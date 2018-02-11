@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeFile="Default.aspx.cs" Inherits="FileUpload" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeFile="New.aspx.cs" Inherits="New" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
@@ -145,17 +145,15 @@
 														<div>
 												
 
-															<div class="alert alert-warning">
-																<button type="button" class="close" data-dismiss="alert">
-																	<i class="ace-icon fa fa-times"></i>
-																</button>
-																<strong>上传影像图</strong>
-
-																ftp://192.168.1.108
+														
+														
+																
                                                                 <p/>
-                                                                本地路径:D:\datadir  
+																FTP地址： ftp://192.168.1.108
+                                                                <p/>
+                                                                本地路径：D:\datadir  
                                                                  <p/>
-                                                                文件格式GeoTiff
+                                                                文件格式：GeoTiff
 																<br />
                                                                  
                                                                 <input id="fileName" type="file" accept="image/tiff" onchange="document.getElementById('aa').value = this.value;" runat="server"  />
@@ -163,11 +161,23 @@
                                                                 <form id="form3" runat="server">
                                                                 <div>
                                                                    
-                                                                    <input id="aa" runat="server" style="display:none" />
+                                                                    <input id="aa" runat="server" style="display:none" runat="server" />
                                                                     <asp:Button ID="Button2" runat="server" Text="上传" OnClick="Button1_Click"   />
                                                                 
                                                                 </div>
                                                                 </form>
+													
+
+                                                            <div id="uploading" class="alert alert-warning" style="display:none" runat="server">
+														
+																<strong>上传中</strong><i class="ace-icon fa fa-spinner fa-spin orange bigger-125"></i>
+                                                               		<div class="progress progress-striped pos-rel">
+													               <div id="rate" class="progress-bar progress-bar-success" style="width: 25%;" runat="server"></div>
+												           </div>
+
+
+
+														
 															</div>
 
                                                             <div id="succeed" class="alert alert-success" style="display:none" runat="server" >
@@ -370,6 +380,8 @@
 				    if (info.step == 1) {
 
 				        //	if(!$('#validation-form').valid()) 
+				        e.preventDefault();
+				        step1();
 				    }
 				    else if (info.step == 2) {
 				        //       
@@ -386,7 +398,7 @@
 				//.on('changed.fu.wizard', function() {
 				//})
 				.on('finished.fu.wizard', function (e) {
-				    location.href = "index.html";
+				    location.href = "index.aspx";
 				}).on('stepclick.fu.wizard', function (e) {
 				    //e.preventDefault();//this will prevent clicking and selecting steps
 
@@ -549,6 +561,9 @@
 		            //in ajax mode, remove remaining elements before leaving page
 		            $('[class*=select2]').remove();
 		        });
+
+		
+
 		    })
 		</script>
 

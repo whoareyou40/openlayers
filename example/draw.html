@@ -18,16 +18,17 @@
    
     <div id="map">
           <input type="button" onClick="drawPolygon();" value="开始画多边形" />
+          <input type="button" onClick="cleanPolygon()" value="清除多边形" /> 
     </div>
 
     <script type="text/javascript">
         var map = new DMap();
         map.initMap();//初始化地图
-
+        //开始画多边形
         function drawPolygon() {
             map.startDraw(drawDone);
         }
-
+        //回调
         function drawDone(evt) {
         
             var currentFeature = null; //当前绘制的几何要素
@@ -41,6 +42,11 @@
             geoStr = coordinates[0].join(";");
 
             alert("绘制的坐标是:" + geoStr);
+        }
+
+        //清除多边形
+        function cleanPolygon() {
+            map.cleanPolygon();
         }
 
     </script>

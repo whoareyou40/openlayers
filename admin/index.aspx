@@ -71,7 +71,7 @@
 			</div><!-- /.navbar-container -->
 		</div>
      
-        <div id="container" class="main-container ace-save-state">  <div  style="text-align: right"> <a href ="new.html">新增</a> <a href ="#" onclick="location.reload()">刷新</a></div></div>
+        <div id="container" class="main-container ace-save-state">  <div  style="text-align: right"> <a href ="FileUpload.aspx">新增</a> <a href ="#" onclick="location.reload()">刷新</a></div></div>
         
 	    <script type="text/javascript" src="jquery.min.js"></script>
 

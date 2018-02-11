@@ -21,12 +21,16 @@
           <input type="button" onClick="zoomOut();" value="缩小" />
           <input type="button" onClick="zoomTo(8);" value="缩放到第八级" />
           <input type="button" onClick="zoomToShanghai();" value="跳转到上海" />
+          <input type="button" onClick="loadShanghai();" value="加载上海行政区" />
+        <input type="button" onClick="selectPolygon()" value="选择多边形" /> 
     </div>
     <script type="text/javascript">
 
         //新建地图对象并初始化
         var myMap = new DMap();
         myMap.initMap();
+
+     //   myMap.addShanghai();
         //放大
         function zoomIn() {
             myMap.zoomIn();
@@ -40,9 +44,41 @@
             myMap.zoomTo(n);
         }
         function zoomToShanghai() {
+           
             var centerPoint = new point(13488202, 3657970);
             myMap.zoomToPoint(centerPoint);
         }
+
+        function loadShanghai() {
+            var centerPoint = new point(13488202, 3657970);
+            myMap.zoomToPoint(centerPoint);
+            zoomTo(10);
+            myMap.loadVectData('../lib/310100.geojson');
+           
+        }
+
+        //选择多边形，并获得多边形信息
+        function selectPolygon() {
+            //初始化多选择多边形控件
+            myMap.selectFeature();
+            //选择多边形事件
+            myMap.selectClick.on('select', function (event) {
+                if (event.selected[0] != null) {
+                    var a = event.selected[0].getGeometry().getCoordinates();
+
+                    var b = event.selected[0].get('name');
+                   
+                    if (b == '崇明区') {
+                        alert('打开崇明区网站');
+                    }
+                    else if (b == '静安区') {
+                        alert('打开静安区网站');
+                    }
+                }
+            })
+        }
+
+
 
 
     </script>
