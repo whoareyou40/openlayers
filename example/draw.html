@@ -21,20 +21,26 @@
     <div id="contextmenu_container" class="contextmenu">
   	</div>
     <div id="map">
-          <input type="button" onClick="drawPolygon();" value="开始画多边形" />
-          <input type="button" onClick="cleanPolygon()" value="清除多边形" /> 
+        <input type="button" onClick="drawPolygon();" value="开始画多边形" />
+        <input type="button" onClick="drawSubPolygon();" value="开始画子多边形" />
+        <input type="button" onClick="cleanPolygon()" value="清除多边形" /> 
         <input type="button" onClick="regRightclick()" value="增加右键清除事件" /> 
 
     </div>
 
     <script type="text/javascript">
-        var map = new DMap();
+        var myMap = new DMap();
         //初始化地图
-        map.initMap();
+        myMap.initMap();
  
         //开始画多边形
         function drawPolygon() {
-            map.startDraw(drawDone);
+            myMap.startDraw(drawDone);
+        }
+
+        //开始画多边形
+        function drawSubPolygon() {
+            myMap.startDraw(drawDone);
         }
         //回调
         function drawDone(evt) {
@@ -60,14 +66,14 @@
 
         //清除多边形
         function cleanPolygon() {
-            map.cleanPolygon();
+            myMap.cleanPolygon();
         }
 
 
         //注册右键清除多边形事件
         function regRightclick() {
-            map.stopDraw();//停止画多边形
-            map.righClick();//注册右键清除多边形事件
+            myMap.stopDraw();//停止画多边形
+            myMap.righClick();//注册右键清除多边形事件
         }
 
     </script>

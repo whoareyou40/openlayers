@@ -82,7 +82,7 @@
                 $.ajax({
                     type: "get",
                     contentType: "application/json",
-                    url: "http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai/coveragestores",
+                    url: "http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai/coveragestores",
                
                     success: function (json) {
                         var json_source = json.coverageStores;

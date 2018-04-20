@@ -37,7 +37,7 @@ function step2() {
     var data = "<coverageStore>" +
                "<workspace>" +
                "<name>shanghai</name>" +
-               "<link>http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai.xml</link>" +
+               "<link>http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai.xml</link>" +
                "</workspace>" +
                "<name>" + $("#dataName").val() + "</name>" +
                "<type>GeoTIFF</type>" +
@@ -46,7 +46,7 @@ function step2() {
                "</coverageStore>";
 
     $.ajax({
-        url: "http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai/coveragestores",
+        url: "http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai/coveragestores",
         type: "POST",
         contentType: "application/xml",
         data: data,
@@ -164,7 +164,7 @@ function step3() {
                 },
                 "name": $("#layerName").val(),
                 "namespace": {
-                    "href": "http://192.168.1.108:8080/geoserver/rest/namespaces/sf.json",
+                    "href": "http://192.168.1.201:8080/geoserver/rest/namespaces/sf.json",
                     "name": "sf"
                 },
                 "nativeBoundingBox": {
@@ -187,7 +187,7 @@ function step3() {
                 "srs": "EPSG:3857",
                 "store": {
                     "@class": "coverageStore",
-                    "href": "http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai/coveragestores/" + $("#layerName").val() + ".json",
+                    "href": "http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai/coveragestores/" + $("#layerName").val() + ".json",
                     "name": "shanghai:" + $("#layerName").val()
                 },
                 "supportedFormats": {
@@ -210,7 +210,7 @@ function step3() {
 
 
         $.ajax({
-            url: "http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai/coveragestores/test/coverages",
+            url: "http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai/coveragestores/test/coverages",
             type: "POST",
             contentType: "application/json",
             data: JSON.stringify(data),
@@ -252,7 +252,7 @@ $(document).ready(function () {
         $.ajax({
             type: "get",
             contentType: "application/xml",
-            url: "http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai/coveragestores",
+            url: "http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai/coveragestores",
             success: function (data) {
                 // alert(data.Value);
                 setState(4);
@@ -365,7 +365,7 @@ $(document).ready(function () {
                 },
                 "name": $("#layerName").val(),
                 "namespace": {
-                    "href": "http://192.168.1.108:8080/geoserver/rest/namespaces/sf.json",
+                    "href": "http://192.168.1.201:8080/geoserver/rest/namespaces/sf.json",
                     "name": "sf"
                 },
                 "nativeBoundingBox": {
@@ -388,7 +388,7 @@ $(document).ready(function () {
                 "srs": "EPSG:3857",
                 "store": {
                     "@class": "coverageStore",
-                    "href": "http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai/coveragestores/" + $("#layerName").val() + ".json",
+                    "href": "http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai/coveragestores/" + $("#layerName").val() + ".json",
                     "name": "shanghai:" + $("#layerName").val()
                 },
                 "supportedFormats": {
@@ -411,7 +411,7 @@ $(document).ready(function () {
 
 
         $.ajax({
-            url: "http://192.168.1.108:8080/geoserver/rest/workspaces/shanghai/coveragestores/test/coverages",
+            url: "http://192.168.1.201:8080/geoserver/rest/workspaces/shanghai/coveragestores/test/coverages",
             type: "POST",
             contentType: "application/json",
             data: JSON.stringify(data),
