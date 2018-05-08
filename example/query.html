@@ -1,0 +1,32 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>模糊查询</title>
+    <script type="text/javascript" src="http://www.shanghai-map.net/SMIJS/Default.ashx"></script>
+    <script type="text/javascript">
+        var map;
+        function init() {
+            map = new smimap("mapDiv", "天地图服务地址");
+        }
+        dojo.addOnLoad(init);
+        function btnVague_onclick() {
+            //keystr比如:武宁路419号 
+            var keystr = Keytext.value;
+            map.QueryVague(keystr, "resultDiv");
+        }
+    </script>
+  </head>
+    <body class="tundra">
+         <div>
+             <input id="Keytext" type="text"> 
+             <input id="btnAdd" type="button" value="查询" onclick="return btnVague_onclick()"">        
+         </div>
+         <div id="mapDiv" style="width:900px; height:600px; border:1px solid #000;">
+
+         </div>
+         <div id="resultDiv" style="width:260px; height:600px; border:1px solid #000;">
+
+        </div>
+    </body>
+</html>

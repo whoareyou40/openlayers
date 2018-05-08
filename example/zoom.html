@@ -25,6 +25,9 @@
           <input type="button" onClick="zoomToShanghai();" value="跳转到上海" />
           <input type="button" onClick="loadShanghai();" value="加载上海行政区" />
           <input type="button" onClick="selectPolygon()" value="选择多边形" /> 
+          <input type="button" onClick="getMousePosition()" value="获得鼠标位置坐标" /> 
+
+
     </div>
     <script type="text/javascript">
 
@@ -32,7 +35,16 @@
         var myMap = new DMap();
         myMap.initMap();
         
-
+        function getMousePosition() {
+            map.addEventListener("click", function (e) {
+                var coordinate = e.coordinate;
+                console.info(coordinate);
+                alert(coordinate);
+                //转换为经纬度坐标
+                var convetCooridinate  = ol.proj.transform(coordinate, 'EPSG:3857','EPSG:4326')
+                alert(convetCooridinate);
+            });
+        }
 
      //   myMap.addShanghai();
         //放大

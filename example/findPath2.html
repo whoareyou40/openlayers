@@ -1,0 +1,608 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+  <title>ol3 pgRouting client</title>
+  <meta charset="utf-8">
+  <link href="../lib/ol.css" rel="stylesheet">
+
+    <style type="text/css">
+        body,html,div,ul,li,iframe,p,img{
+            border:none;padding:0;margin:0;
+        }
+        #map{
+            width:100%;
+            height:800px;
+        }
+        #menu{
+            width:100%;
+            height:20px;         
+            padding:5px 10px;
+            font-size:14px;
+            font-family:"微软雅黑";
+            left:10px;    
+        }
+        .title{
+            margin:0 15px; 
+        }
+        #container{
+            float:right;
+            position:absolute;
+            width:340px;
+            height:200px; 
+            right:5px;
+            background-color:#4c4e5a;
+            z-index:2000;   /*在地图容器中的层，要设置z-index的值让其显示在地图上层*/    
+            border-width: 10px; /*边缘的宽度*/
+            border-radius: 10px;    /*圆角的大小 */ 
+            border-color: #000 #000 #000 #000;  /*边框颜色*/
+            padding:10px;
+            font-size:14px;
+            font-family:"微软雅黑";
+            color:#ffffff;
+        }
+        code{
+            color:Yellow;
+        }
+    </style>
+  </head>
+  <body>
+          <div id="menu">
+    
+        <button id="clear">重新规划</button>   <button id="simulate">模拟导航</button>
+    
+        <div id="info" class="alert alert-error" style="display: none;"></div>
+    </div> 
+    <img id="geolocation_marker" src="../lib/geolocation_marker_heading.png" />
+  <div id="map">
+
+        <div id="container">
+            <p>位置点坐标（position）: <code id="position"></code></p>
+            <p>位置精度（position accuracy）: <code id="accuracy"></code></p>
+            <p>当前航向（heading）: <code id="heading"></code></p>
+            <p>当前速度（speed）: <code id="speed"></code></p>
+            <p>采样周期（delta）: <code id="delta"></code></p>
+            <p>是否偏离航线: <code id="isDeviate"></code></p>
+            <p>提示: <code id="hint"></code></p>
+            <p>推荐路线: <code id="tips"></code></p>
+        </div>
+  </div>
+
+  <script src="../lib/ol.js"></script>
+  <script src="../lib/jquery.min.js" type="text/javascript"></script>
+  <script src="../lib/turf.min.js"></script>
+  <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL,fetch"></script>
+  <script type="text/javascript">
+      var bounds = [119.98713684082, 27.9799995422363,
+            122.532791137695, 32.0200614929199];
+
+
+      var view = new ol.View({
+          center: ol.proj.transform([121.53, 31.2], 'EPSG:4326', 'EPSG:3857'),
+          zoom: 10
+      });
+
+      var map = new ol.Map({
+          target: 'map',
+          layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+            })
+          ],
+          view: view,
+          controls: ol.control.defaults({
+              attributionOptions: {
+                  collapsible: false
+              }
+          })
+      });
+
+  
+
+      var params = {
+          LAYERS: 'xblk:navigation',
+          FORMAT: 'image/png'
+      }
+      var params1 = {
+        
+      }
+      //真实坐标
+      var position_now;
+      //结果线
+      var resultLine;
+ //     map.getView().fit(ol.proj.transform(bounds, 'EPSG:4326', 'EPSG:3857'), map.getSize());
+      // The "start" and "destination" features.
+      var startPoint = new ol.Feature();
+      var destPoint = new ol.Feature();
+      //定义转折点
+      var curvePoint = new Array();
+      var curveHint = new Array();
+
+      // The vector layer used to display the "start" and "destination" features.
+      var vectorLayer = new ol.layer.Vector({
+          source: new ol.source.Vector({
+              features: [startPoint, destPoint]
+          })
+      });
+      map.addLayer(vectorLayer);
+
+      // A transform function to convert coordinates from EPSG:3857
+      // to EPSG:4326.
+      var transform = ol.proj.getTransform('EPSG:3857', 'EPSG:4326');
+
+      // Register a map click listener.
+      map.on('click', function (event) {
+          if (startPoint.getGeometry() == null) {
+              // First click.
+              startPoint.setGeometry(new ol.geom.Point(event.coordinate));
+          } else if (destPoint.getGeometry() == null) {
+              // Second click.
+              destPoint.setGeometry(new ol.geom.Point(event.coordinate));
+              // Transform the coordinates from the map projection (EPSG:3857)
+              // to the server projection (EPSG:4326).
+              var startCoord = transform(startPoint.getGeometry().getCoordinates());
+              var destCoord = transform(destPoint.getGeometry().getCoordinates());
+              var viewparams = [
+                'x1:' + startCoord[0], 'y1:' + startCoord[1],
+                'x2:' + destCoord[0], 'y2:' + destCoord[1]
+              ];
+              params.viewparams = viewparams.join(';');
+              result = new ol.layer.Image({
+                  source: new ol.source.ImageWMS({
+                      url: 'http://192.168.1.108:8080/geoserver/xblk/wms',
+                      params: params
+                  })
+              });
+
+              params1.viewparams = viewparams.join(';');
+
+              var url = "http://192.168.1.108:8080/geoserver/xblk/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=xblk:navigation&maxFeatures=50&outputFormat=application%2Fjson";
+              url = url + "&viewparams=x1%3A" + startCoord[0];
+              url = url + "%3By1%3A" + startCoord[1];
+              url = url + "%3Bx2%3A" + destCoord[0];
+              url = url + "%3By2%3A" + destCoord[1];
+              console.info(url);
+              //计算导航路线
+              count(url);
+            
+             // console.info(vector1);
+            //  map.addLayer(vector1);
+              map.addLayer(result);
+
+          
+          }
+      });
+      var options = { units: 'kilometers' };
+      var clearButton = document.getElementById('clear');
+      clearButton.addEventListener('click', function (event) {
+          // Reset the "start" and "destination" features.
+          startPoint.setGeometry(null);
+          destPoint.setGeometry(null);
+          view.setRotation(0); //初始旋转角度
+
+          // Remove the result layer.
+          map.removeLayer(result);
+      });
+
+
+
+      /* start ===================模拟导航演示===================================*/
+
+      // 定义用LineString存储轨迹点的地理位置信息（XYZM，Z维度用来存储角度/M则为时间维度）
+      var positions = new ol.geom.LineString([],/** @type {ol.geom.GeometryLayout} */('XYZM'));
+      // 创建导航定位控件（Geolocation Control）
+      var geolocation = new ol.Geolocation(/** @type {olx.GeolocationOptions} */({
+          projection: view.getProjection(), //投影坐标系
+          //追踪参数
+          trackingOptions: {
+              maximumAge: 10000, //最大周期
+              enableHighAccuracy: true, //启用高精度
+              timeout: 600000  //超时
+          }
+      }));
+      //创建导航定位标识的标注，添加到地图中
+      var markerEl = document.getElementById('geolocation_marker');
+      var marker = new ol.Overlay({
+          positioning: 'center-center',
+          element: markerEl,
+          stopEvent: false
+      });
+      map.addOverlay(marker);
+
+      var deltaMean = 500; // 地理位置变化采样周期（MS）
+      // 定位位置变化监听事件（添加定位点并更新轨迹面板信息）
+      geolocation.on('change', function (evt) {
+          var position = geolocation.getPosition();
+
+          var accuracy = geolocation.getAccuracy();
+          var heading = geolocation.getHeading() || 0;
+          var speed = geolocation.getSpeed() || 0;
+          var m = Date.now();
+          addPosition(position, heading, m, speed); //添加定位点
+          var coords = positions.getCoordinates();
+          var len = coords.length;
+          if (len >= 2) {
+              deltaMean = (coords[len - 1][3] - coords[0][3]) / (len - 1);
+          }
+          var isDeviate = "否";
+          var pointLinedistance = countDistance();
+          if (pointLinedistance > 60) {
+              isDeviate = "是";
+              $('#hint').text("请重新规划");
+          } else {
+              countHint();
+          }
+         // countPoint();
+          
+          //更新信息面板的定位点相关信息
+          $('#position').text(position[0].toFixed(2) + ', ' + position[1].toFixed(2));
+          $('#accuracy').text(accuracy);
+          $('#altitude').text(geolocation.getAltitude() + ' [m]');
+          $('#altitudeAccuracy').text(geolocation.getAltitudeAccuracy() + ' [m]');
+          $('#heading').text(Math.round(radToDeg(heading)) + '&deg;');
+          $('#speed').text((speed * 3.6).toFixed(1) + ' km/h');
+          $('#delta').text(Math.round(deltaMean) + 'ms');
+          $('#isDeviate').text(isDeviate);
+
+      });
+      // 导航控件错误事件
+      geolocation.on('error', function () {
+          alert('geolocation error');
+      });
+      var first = true;
+      var oldDistance = 0;
+      var n = 0;
+      //计算当前位置和导航路线的关系
+      function countDistance() {
+
+          var pointNearLine = turf.pointOnLine(resultLine, turf.point(position_now));
+          console.log(pointNearLine);
+          var pointLinedistance = Math.round(turf.distance(
+            turf.point(position_now),
+            pointNearLine,
+            options
+           ) * 1000);
+          console.log(pointLinedistance);
+          return pointLinedistance;
+      }
+      //计算模拟点的提示
+      function countHint() {
+          //计算当前位置和第一个拐点的距离a
+          //计算前位置和第一个拐点的距离b
+          //如果a>b ,开始进入下一个拐点的计算
+         // console.log(curveHint);
+          // console.log(curvePoint);
+          var hint = "";
+          //第一次计算
+          if (first) {
+               first = false;
+               oldDistance = 0;
+               n = 0;
+               var distance = Math.round(turf.distance(
+                   turf.point(position_now),
+                   curvePoint[n],
+                   options
+                  ) * 1000);
+               oldDistance = distance;
+               hint = "沿当前道路继续走" + distance+"米后"+curveHint[n];
+          }
+          else {
+              var distance = Math.round(turf.distance(
+                  turf.point(position_now),
+                  curvePoint[n],
+                  options
+                 ) * 1000);
+              //如果距离超过上一次
+              if (distance > oldDistance) {
+                  n = n + 1;
+                  var newDistance = Math.round(turf.distance(
+                     turf.point(position_now),
+                     curvePoint[n],
+                     options
+                    ) * 1000);
+                  oldDistance = newDistance;
+                  hint = "沿当前道路继续走" + newDistance + "米后" + curveHint[n];
+                  //计算当前点和下一个位置的距离
+              }
+              else {
+                  //输出提示 
+                  oldDistance = distance;
+                  hint = "沿当前道路继续走" + distance + "米后" + curveHint[n];
+              }
+          }
+      //    console.log(hint);
+          $('#hint').text(hint);
+       //   console.log(distance);
+      }
+
+      // 弧度转为度
+      function radToDeg(rad) {
+          return rad * 360 / (Math.PI * 2);
+      }
+      // 度转为弧度
+      function degToRad(deg) {
+          return deg * Math.PI * 2 / 360;
+      }
+      // 负值模式
+      function mod(n) {
+          return ((n % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      }
+      //添加定位点
+      function addPosition(position, heading, m, speed) {
+          var x = position[0];
+          var y = position[1];
+          var fCoords = positions.getCoordinates();
+          var previous = fCoords[fCoords.length - 1];
+          var prevHeading = previous && previous[2];
+          if (prevHeading) {
+              var headingDiff = heading - mod(prevHeading);
+              // 强制变换角度（旋转角度变化不超过180度）
+              if (Math.abs(headingDiff) > Math.PI) {
+                  var sign = (headingDiff >= 0) ? 1 : -1;
+                  headingDiff = -sign * (2 * Math.PI - Math.abs(headingDiff));
+              }
+              heading = prevHeading + headingDiff;
+          }
+          positions.appendCoordinate([x, y, heading, m]);
+          //只保留20个最后的坐标
+          positions.setCoordinates(positions.getCoordinates().slice(-20));
+      }
+
+      var previousM = 0;
+      // 地图渲染前改变中心与旋转角度
+      map.beforeRender(function (map, frameState) {
+          if (frameState !== null) {
+              // 利用地理位置变化采样周期平稳变换过渡
+              var m = frameState.time - deltaMean * 1.5;
+              m = Math.max(m, previousM);
+              previousM = m;
+              // 沿模拟轨迹设置当前定位点的position
+              var c = positions.getCoordinateAtM(m, true);
+              var view = frameState.viewState;
+              if (c) {
+                  view.center = getCenterWithHeading(c, -c[2], view.resolution);//设置地图中心点
+                  view.rotation = -c[2];//设置地图旋转角度
+                  marker.setPosition(c);//设置导航定位点的标注位置
+              }
+          }
+          return true; // Force animation to continue
+      });
+
+      // 重新计算得到地图中心点（ by putting the given coordinates at 3/4 from the top or  the screen）
+      function getCenterWithHeading(position, rotation, resolution) {
+          var size = map.getSize();
+          var height = size[1];
+          return [
+              position[0] - Math.sin(rotation) * height * resolution * 1 / 4,
+              position[1] + Math.cos(rotation) * height * resolution * 1 / 4
+          ];
+      }
+
+      // 地图的postcompose 事件回调函数
+      function render() {
+          map.render();//渲染地图
+      }
+
+      // 模拟轨迹数据加载（本地的json格式数据）
+      var simulationData;
+      var simulationCacheData;//缓存数据
+      var client = new XMLHttpRequest();
+      client.open('GET', '../lib/shanghai.json');
+      client.onload = function () {
+          simulationData = JSON.parse(client.responseText).data;
+          simulationCacheData = JSON.parse(client.responseText).data;
+      };
+      client.send();
+      //导航功能按钮的单击事件，实现导航功能
+      var simulateBtn = document.getElementById('simulate');
+      simulateBtn.addEventListener('click', function () {
+          if (simulationData == null || simulationData == undefined) {
+              alert("未成功加载模拟数据！");
+              return;
+          }
+          else if (simulationData.length == 0) {//判断当前的模拟轨迹数组是否有数据
+              simulationData = simulationCacheData;
+          }
+          var coordinates = simulationData; //模拟轨迹点数组
+          var first = coordinates.shift(); //删除数组第一个元素并返回第一个元素
+          simulatePositionChange(first); //执行模拟位置变换功能
+          var prevDate = first.timestamp; //默认第一个点位点的时间戳
+          //定位功能函数
+          function geolocate() {
+              var position = coordinates.shift(); //删除数组第一个元素并返回第一个元素
+              if (!position) {
+                  simulateBtn.disabled = ''; //开启功能按钮
+                  return;
+              }
+              var newDate = position.timestamp; //当前定位点时间戳
+              simulatePositionChange(position); //执行模拟位置变换功能
+              //创建一个定时器，每隔一定时间执行定位功能函数
+              window.setTimeout(function () {
+                  prevDate = newDate;
+                  geolocate();
+              }, (newDate - prevDate) / 0.5);
+          }
+          geolocate(); //执行定位功能
+          map.on('postcompose', render); //为地图容器添加postcompose事件监听
+          map.render(); //渲染地图
+          simulateBtn.disabled = 'disabled'; //禁用功能按钮
+      }, false);
+
+      //模拟位置变换功能函数
+     
+      function simulatePositionChange(position) {
+          var coords = position.coords;
+          geolocation.set('accuracy', coords.accuracy);
+          geolocation.set('heading', degToRad(coords.heading));
+          var position_ = [coords.longitude, coords.latitude];
+          position_now = position_;
+          var projectedPosition = ol.proj.transform(position_, 'EPSG:4326', 'EPSG:3857');
+          geolocation.set('position', projectedPosition);
+          geolocation.set('speed', coords.speed);
+          geolocation.set('isInside', 'yes');
+          geolocation.changed();
+      }
+
+      /* end ===================模拟导航演示===================================*/
+
+
+      function count(url) {
+          var source = new ol.source.Vector();
+          var hint = "";
+          //     fetch('http://192.168.1.108:8080/geoserver/xblk/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=xblk:navigation&maxFeatures=50&outputFormat=application%2Fjson&viewparams=x1%3A121.29249572753905%3By1%3A31.070579642117337%3Bx2%3A121.80198669433591%3By2%3A31.521190820141896').then(function (response) {
+          fetch(url).then(function (response) {
+              return response.json();
+          }).then(function (json) {
+              var format = new ol.format.GeoJSON();
+              var features = format.readFeatures(json);
+              console.log(json);
+              // var parser = new jsts.io.OL3Parser();
+
+
+              var feature = features[0];
+              // convert the OpenLayers geometry to a JSTS geometry 
+              //      var jstsGeom = parser.read(feature.getGeometry());
+
+              resultLine = turf.lineString(feature.getGeometry().getCoordinates());
+
+              var gem1 = feature.getGeometry();
+
+              var a = gem1.getCoordinates();
+              console.log(a);
+
+
+              //判断路径是否相反
+              if (a.length > 0) {
+                  var p1 = turf.point(a[0]);
+                  //   var sDistance = turf.point
+                  //    var destPoint = new ol.Feature();
+                  //    var endPoint;
+
+                  var startCoord = transform(startPoint.getGeometry().getCoordinates());
+                  var destCoord = transform(destPoint.getGeometry().getCoordinates());
+                  console.log(a[0]);
+
+
+              //    var options = { units: 'kilometers' };
+              //    console.log(distance1);
+                  var sDistance = turf.distance(   
+                    turf.point(a[0]),
+                    turf.point(startCoord),
+                    options
+                    );
+
+                  var dDistance = turf.distance(
+                    turf.point(a[0]),
+                    turf.point(destCoord),
+                    options
+                    );
+                  if (sDistance > dDistance) {
+                      a = a.reverse();
+                  }
+              }
+
+           //   console.log(sDistance +","+ dDistance);
+
+              curvePoint = new Array();
+              curveHint = new Array();
+              //      var hint = "";
+              var totaldistance = 0;
+
+              var j = 0;
+              for (var i = 0; i < a.length - 2; i++) {
+                  //do something
+                  //    console.log(a[i]);
+                  //    console.log(a[i + 1]);
+                  var pt1 = turf.point(a[i]);
+                  var pt2 = turf.point(a[i + 1]);
+                  var pt3 = turf.point(a[i + 2]);
+                  var bearing1 = turf.bearing(pt1, pt2);
+                  var bearing2 = turf.bearing(pt2, pt3);
+               
+                  var distance = Math.round(turf.distance(
+                     pt1,
+                     pt2,
+                     options
+                    ) * 1000);
+                  totaldistance = distance + totaldistance;
+
+                  if (((bearing1 - bearing2) >= 45 && (bearing1 - bearing2)<=180)||((bearing1 - bearing2) <= 315 && (bearing1 - bearing2) >= 180)) {
+                      hint = hint + "直行" + totaldistance + "米,";
+                      hint = hint + "左转,";
+                      totaldistance = 0;
+                      console.log(bearing1 + "," + bearing2);
+                      curvePoint[j] = pt2;
+                      curveHint[j] = "左转";
+                      j++;
+                  }
+                  else if ((bearing1 - bearing2) <= -45 && (bearing1 - bearing2) >= -180 || ((bearing1 - bearing2) <= -180 && (bearing1 - bearing2)>= -315)) {
+                      hint = hint + "直行" + totaldistance + "米,";
+                      hint = hint + "右转,";
+                      totaldistance = 0;
+                      console.log(bearing1 + "," + bearing2);
+                      curvePoint[j] = pt2;
+                      curveHint[j] = "右转";
+                      j++;
+                  }
+
+
+
+
+                  if (i == a.length - 3) {
+                      hint = hint + "直行" + totaldistance + "米";
+                  }
+               
+                  // console.log(distance);
+              }
+              console.log(curveHint);
+              console.log(curvePoint);
+
+              $('#tips').text(hint);
+
+              //   var turfLine = format.writeFeatureObject(feature);
+
+
+
+              //   var buffered = turf.buffer(turfLine, 40, { units: 'miles' });
+
+
+              //       console.log(buffer);
+
+              //  var reader = new jsts.io.WKTReader();
+              //  var a = reader.read('POINT (121.295943345 31.1571809800001)');
+              //   var intersection = a.intersection(buffered);
+              //    alert(buffered);
+              // convert back from JSTS and replace the geometry on the feature
+              //     var marker = format.readFeatures(buffered);
+
+              //   feature.setGeometry(marker);
+              //    marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+              //       source.addFeature(marker);
+
+
+
+              /*
+              var buffer = turf.buffer(polys_fc, 3, 'kilometers');
+              source.addFeatures(geojsonToFeatures(buffer, {
+                  featureProjection: 'EPSG:3857'
+              }));*/
+              //   source.addFeatures(features);
+          });
+
+
+          var vectorLayer = new ol.layer.Vector({
+              source: source
+          });
+
+
+
+
+          map.addLayer(vectorLayer);
+
+      }
+
+      /* start==buffer*/
+    
+      /* end ===buffer*/
+  </script>
+  </body>
+</html>

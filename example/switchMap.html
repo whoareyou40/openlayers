@@ -19,8 +19,10 @@
 <body>
    
     <div id="map">
-          <input type="button" onClick="switchMap(1);" value="切换到矢量图(OpenStreetMap)" />
+          <input type="button" onClick="switchMap(1);" value="切换到矢量图(天地图)" />
           <input type="button" onClick="switchMap(2);" value="切换到影像图(天地图)" />
+          <input type="button" onClick="switchMap(3);" value="切换到矢量图(本地)" />
+          <input type="button" onClick="switchMap(4);" value="切换到影像图(本地)" />
 
             <input type="checkbox" checked="checked" onclick="checkDistrict(this);" />行政区
             <input type="checkbox" checked="checked" onclick="checkBlock(this);"/>地块
@@ -31,12 +33,16 @@
         //新建地图对象并初始化
         var myMap = new DMap();
         myMap.initMap();
-     
+
+
         //自定义切换底图方法
         function switchMap(n) {
             myMap.switchMap(n);
         }
 
+        function addLayer() {
+            myMap.addLayer("shanghai");
+        }
 
         // 隐藏显示行政区图层
         function checkDistrict(elem) {

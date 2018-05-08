@@ -22,7 +22,6 @@
   	</div>
     <div id="map">
         <input type="button" onClick="drawPolygon();" value="开始画多边形" />
-        <input type="button" onClick="drawSubPolygon();" value="开始画子多边形" />
         <input type="button" onClick="cleanPolygon()" value="清除多边形" /> 
         <input type="button" onClick="regRightclick()" value="增加右键清除事件" /> 
 
@@ -38,10 +37,7 @@
             myMap.startDraw(drawDone);
         }
 
-        //开始画多边形
-        function drawSubPolygon() {
-            myMap.startDraw(drawDone);
-        }
+
         //回调
         function drawDone(evt) {
         
@@ -60,6 +56,7 @@
             var area = turf.area(pt);
             alert("绘制的面积是：" + area);
             alert("绘制的坐标是:" + geoStr);
+            alert("绘制的经纬度坐标是:" + pt.geometry.coordinates);
 
             regRightclick();
         }

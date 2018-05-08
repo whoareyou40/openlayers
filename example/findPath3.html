@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+  <title>JS实现</title>
+  <meta charset="utf-8">
+  <link href="../lib/ol.css" rel="stylesheet">
+
+    <style type="text/css">
+        body,html,div,ul,li,iframe,p,img{
+            border:none;padding:0;margin:0;
+        }
+        #map{
+            width:100%;
+            height:800px;
+        }
+        #menu{
+            width:100%;
+            height:20px;         
+            padding:5px 10px;
+            font-size:14px;
+            font-family:"微软雅黑";
+            left:10px;    
+        }
+        .title{
+            margin:0 15px; 
+        }
+        #container{
+            float:right;
+            position:absolute;
+            width:340px;
+            height:200px; 
+            right:5px;
+            background-color:#4c4e5a;
+            z-index:2000;   /*在地图容器中的层，要设置z-index的值让其显示在地图上层*/    
+            border-width: 10px; /*边缘的宽度*/
+            border-radius: 10px;    /*圆角的大小 */ 
+            border-color: #000 #000 #000 #000;  /*边框颜色*/
+            padding:10px;
+            font-size:14px;
+            font-family:"微软雅黑";
+            color:#ffffff;
+        }
+        code{
+            color:Yellow;
+        }
+    </style>
+  </head>
+  <body>
+          <div id="menu">
+    
+        <button id="clear">重新规划</button>  
+    
+        <div id="info" class="alert alert-error" style="display: none;"></div>
+    </div> 
+    
+  <div id="map">
+
+  </div>
+
+  <script src="../lib/ol.js"></script>
+  <script src="../lib/jquery.min.js" type="text/javascript"></script>
+  <script src="../lib/turf.js"></script>
+  <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL,fetch"></script>
+   <script src="../lib/helper.js"></script>
+  <script type="text/javascript">
+      var bounds = [119.98713684082, 27.9799995422363,
+            122.532791137695, 32.0200614929199];
+
+
+      var view = new ol.View({
+          center: ol.proj.transform([121.775, 31.509], 'EPSG:4326', 'EPSG:3857'),
+          zoom: 16
+      });
+
+      var map = new ol.Map({
+          target: 'map',
+          layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+            })
+          ],
+          view: view,
+          controls: ol.control.defaults({
+              attributionOptions: {
+                  collapsible: false
+              }
+          })
+      });
+
+  
+
+      var params = {
+          LAYERS: 'xblk:navigation',
+          FORMAT: 'image/png'
+      }
+
+      //真实坐标
+      var position_now;
+      //结果线
+      var resultLine;
+ //     map.getView().fit(ol.proj.transform(bounds, 'EPSG:4326', 'EPSG:3857'), map.getSize());
+      // The "start" and "destination" features.
+      var startPoint = new ol.Feature();
+      var destPoint = new ol.Feature();
+      //定义转折点
+      var curvePoint = new Array();
+      var curveHint = new Array();
+
+      // The vector layer used to display the "start" and "destination" features.
+      var vectorLayer = new ol.layer.Vector({
+          source: new ol.source.Vector({
+              features: [startPoint, destPoint]
+          })
+      });
+      map.addLayer(vectorLayer);
+
+      // Declare a source for polygons
+      var vectorSourcePolygons = new ol.source.Vector();
+
+      var vectorLayerPolygons = new ol.layer.Vector({
+          source: vectorSourcePolygons,
+          style: [
+            new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                    color: [0, 121, 88, 1],
+                    width: 2
+                })
+            })
+          ]
+      });
+      var vectorFeatures;
+      var blocks;
+      map.addLayer(vectorLayerPolygons);
+      fetch('../lib/polygon.geojson').then(function (response) {
+          return response.json().then(function (polys_fc) {
+              console.log(polys_fc);
+              blocks = polys_fc;
+              vectorFeatures = geojsonToFeatures(polys_fc, {
+                  featureProjection: 'EPSG:3857',
+                  dataProjection: 'EPSG:4326'    // 设定JSON数据使用的坐标系
+              });
+              vectorSourcePolygons.addFeatures(vectorFeatures);
+
+
+          });
+      });
+      //vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6))); //添加单个几何要素
+   
+      // A transform function to convert coordinates from EPSG:3857
+      // to EPSG:4326.
+      var transform = ol.proj.getTransform('EPSG:3857', 'EPSG:4326');
+      var lineVectorLayer;
+      // Register a map click listener.
+      map.on('click', function (event) {
+          if (startPoint.getGeometry() == null) {
+              // First click.
+              startPoint.setGeometry(new ol.geom.Point(event.coordinate));
+          } else if (destPoint.getGeometry() == null) {
+              // Second click.
+              destPoint.setGeometry(new ol.geom.Point(event.coordinate));
+              // Transform the coordinates from the map projection (EPSG:3857)
+              // to the server projection (EPSG:4326).
+              var startCoord = transform(startPoint.getGeometry().getCoordinates());
+              var destCoord = transform(destPoint.getGeometry().getCoordinates());
+
+           
+
+              var start = [startCoord[0], startCoord[1]];
+              var end = [destCoord[0], destCoord[1]]; 
+              var options = {
+                  resolution:0.0001,
+                  obstacles: blocks,
+                  units: 'degrees',
+                 
+         
+              };
+
+              var convertedS = turf.toMercator(start);
+              var convertedE = turf.toMercator(end);
+              var convertedB = turf.toMercator(blocks);
+              var convertedOptions = {
+                  obstacles: convertedB,
+                  units: 'kilometers'
+              };
+  
+              var path = turf.shortestPath(start, end, options);
+              
+            // var convertedPath = turf.shortestPath(convertedS, convertedE, convertedOptions);
+             
+            //  console.info(convertedPath);
+              console.info(path);
+
+              var options1 = { tolerance: 0.00005, highQuality: true };
+           //   var simplified = turf.simplify(path, options1);
+
+              var bezier = turf.bezier(path);
+
+              var source = new ol.source.Vector();
+              var format = new ol.format.GeoJSON();
+              var feature = format.readFeature(path);
+              feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
+              source.addFeature(feature);
+
+              /*
+              feature = format.readFeature(simplified);
+              feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
+              source.addFeature(feature);
+              feature = format.readFeature(bezier);
+              feature.getGeometry().transform('EPSG:4326', 'EPSG:3857')
+              source.addFeature(feature);*/
+              lineVectorLayer = new ol.layer.Vector({
+                  source: source
+              });
+
+          
+
+
+              map.addLayer(lineVectorLayer);
+          }
+      });
+      var options = { units: 'kilometers' };
+      var clearButton = document.getElementById('clear');
+      clearButton.addEventListener('click', function (event) {
+          // Reset the "start" and "destination" features.
+          startPoint.setGeometry(null);
+          destPoint.setGeometry(null);
+          view.setRotation(0); //初始旋转角度
+
+          // Remove the result layer.
+        //  map.removeLayer(result);
+    //      map.removeLayer(vectorLayer);
+          map.removeLayer(lineVectorLayer);
+      });
+      // Declare a source for polygons
+
+
+
+
+
+
+
+
+
+  </script>
+  </body>
+</html>

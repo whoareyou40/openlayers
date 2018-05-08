@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="天地图"/>
+    <title>根据关键字搜索</title>
+
+    <style type="text/css">body,html{width:100%;height:100%;margin:0;font-family:"Microsoft YaHei"}#map{width:100%;height:400px}input,b,p{margin-left:5px;font-size:14px}</style>
+    <script type="text/javascript" src="http://api.tianditu.com/api?v=4.0"></script>
+    <script type="text/javascript" src="../lib/viewer.js"></script>
+    <script>
+        var myMap;
+        function onLoad() {
+            //初始化地图对象
+            myMap = new TMap();
+            myMap.initMap();
+
+
+        
+        }
+        //查询
+        function search() {
+            myMap.search(document.getElementById('keyWord').value);
+        }
+        //点击地图结果
+        function searchResult(result) {
+            console.info(result);
+            if (result.getStatus() == 0) {
+                document.getElementById("lng").value = result.getLocationPoint().getLng();
+                document.getElementById("lat").value = result.getLocationPoint().getLat();
+                document.getElementById("detail").value = result.getAddress();
+                var addressComponent = result.getAddressComponent();
+                document.getElementById("district").value = addressComponent.city;
+                document.getElementById("address").value = addressComponent.address;
+            }
+            else {
+                alert("出错了");
+            }
+        }
+     
+
+
+    </script>
+</head>
+<body onLoad="onLoad()">
+ <div id="map"></div>
+<div style="position:absolute;">
+ 
+    <input type="text" id="keyWord" value="静安寺"/>
+    <input type="button" onClick="search()" value="搜索"/><p>
+
+      
+        经度：<input type="text" value="" id="lng" /><p>
+        纬度：<input type="text" value="" id="lat" /><p>
+        详细地址：<input type="text" value="" id="detail" /><p>
+        所在市/区：<input type="text" value="" id="district" /><p>
+        地点信息：<input type="text" value="" id="address" /><p>
+    <br/>
+    
+</div>
+</body>
+</html>

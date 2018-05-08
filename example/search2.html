@@ -1,0 +1,75 @@
+﻿<html>
+
+<head>
+  <title>wfs demo</title>
+  <link rel="stylesheet" href="../lib/ol.css" type="text/css" />
+  <script src="../lib/ol.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../lib/viewer.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../lib/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="../lib/turf.min.js"></script>
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL,fetch"></script>
+</head>
+
+<body>
+
+  <div id="map" style="width:100%;height:100%;"></div>
+
+  <script>
+
+      var data_param = { "keyWord": "陈家镇 陈西村", "level": "10", "queryType": "1", "count": "1", "start": "0", "mapBound": "120.821282 ,30.671088,122.043374 ,31.900318", "specifyAdminCode": "156310000" };
+    //  var data_param = { "keyWord": "徐汇区", "level": "10", "queryType": "1", "count": "1", "start": "0", "mapBound": "120.821282 ,30.671088,122.043374 ,31.900318", "specifyAdminCode": "156310000" };
+
+      
+    //  "http://www.tianditu.com/query.shtml?postStr=" + data_param + "&type=query"
+
+      var myMap = new DMap();
+      myMap.initMap();
+
+      $.ajax({
+          url: "http://www.tianditu.com/query.shtml?postStr=" + JSON.stringify(data_param) + "&type=query",
+          type: "GET",
+          headers: {
+              "X-Auth-Token": "open-sesame",
+              "Content-Type": "application/json"
+          },
+          contentType: 'text/html; charset=UTF-8',
+          dataType: "json",
+          success: function (data) {
+              console.log(data);
+            //  alert(data.area); // Object  
+              //  alert(data.area.lonlat); // Object  
+              var point ;
+              if (data.area == null) {
+                  point = data.pois[0].lonlat.split(" ");
+              }
+              else {
+                  point = data.area.lonlat.split(",");
+              }
+              //当前位置坐标
+              var centerPoint = turf.point(point);
+              //坐标转换
+              var converted = turf.toMercator(centerPoint);
+              //取得坐标数组
+              var coord = turf.getCoord(converted);
+              myMap.zoomToPoint(coord);
+              myMap.zoomTo(13);
+
+          },
+          error: function (XMLHttpRequest, textStatus, errorThrown) {
+              alert(XMLHttpRequest.status);
+              alert(XMLHttpRequest.readyState);
+              alert(textStatus);
+          },
+          complete: function (XMLHttpRequest, textStatus) {
+          }
+      });
+
+
+
+    
+  </script>
+
+</body>
+
+</html>
